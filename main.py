@@ -15,11 +15,13 @@ def main():
    L=10 #size of box; needs to be cubic for the method to be working
    T=200
    #time-step (in ps)
-   dt=0.50
-   t=10e3
+   dt=0.3
+   t=10e03
    output="box.dat"
    #now, start simulation
 
+   #particle,mass=ph.testBox(N,L, T)
+   #particle,mass=ph.testForce(N,L, T)
    particle,mass=ph.seed(N,L, T)
    force=ph.update_force(particle) #get forces
    ph.print_conf(particle,output, 0)
