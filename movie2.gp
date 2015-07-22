@@ -1,5 +1,5 @@
 set term gif animate delay 2
-set output "movie.gif"
+set output "movie2.gif"
 set title "unboxed evolution"
 set xlabel "x"
 set ylabel "y"
@@ -11,5 +11,5 @@ set zrange[0:10]
 stats 'box.dat' nooutput
 
 do for [i=1:int(STATS_blocks)] {
-   plot "box.dat" index (i-1) u 3:4 w p ps 3 title sprintf("t=%i",i)
+   splot "box.dat" index (i-1) u 3:4:5:5 ps 3 title sprintf("t=%i",i)
 }

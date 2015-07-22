@@ -2,6 +2,36 @@
 import numpy as np
 import random as rand
 
+def seed_fcc(N,L,T):
+   def fcc(r, l):
+      parti=np.zeros((4,3))
+      parti[0]=r
+      parti[1]=[r[0]+l/2,r[1]+l/2,r[2]]
+      parti[2]=[r[0]+l/2,r[1],r[2]+l/2]
+      parti[3]=[r[0],r[1]+l/2,r[2]+l/2]
+      return parti
+
+   k=2.07e-8
+   N=256
+   phasecoord=np.zeros((N,6))
+   mass=np.ones(N) #can be changed to treat different particles
+   r=[L/8,L/8,L/8]
+   for particle in range(0,N,4):
+      phasecoord[particle:particle+4].T[:3]=fcc(r,L/5).T
+      if r[0]<L-2*L/5:
+         r[0]+=L/5
+      elif r[1]<L-2*L/5:
+         r[0]=L/8
+         r[1]+=L/5
+      else:
+         r[0]=L/8
+         r[1]=L/8
+         r[2]+=L/5
+      for coord in range(3,6):
+         # allow for velocities between 1 and -1
+         phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
+   return phasecoord,mass
+
 def seed(N,L,T):
    """ simple method for placing particles randomly in the cell. No test of overlapping (small distances) is done.
    """
@@ -13,7 +43,7 @@ def seed(N,L,T):
          phasecoord[particle][coord]= rand.random()*L #random float in the box
       for coord in range(3,6):
          # allow for velocities between 1 and -1
-         phasecoord[particle][coord]=(rand.random()-0.5)*2*np.sqrt(T*3*k/mass[particle])/np.sqrt(3)
+         phasecoord[particle][coord]=(rand.random()-0.5)*2*2*np.sqrt(T*k)
    return phasecoord,mass
 
 def testBox(N,L, T):
@@ -53,7 +83,7 @@ def testForce(N,L, T):
    phasecoord[2][4]=-0.001
    return phasecoord,mass
 
-def propagate(f,particle,L,dt, mass):
+def propagate(f,particle,L,dt, mass, alpha,T):
    """ Calculate one propagation step 
    """
    #update force and momentum for particles:
@@ -68,6 +98,11 @@ def propagate(f,particle,L,dt, mass):
       particle[part][3:]+=dt/mass[part]*f[part]/2
       for i in range(3):
          particle[part][i]=particle[part][i]%L
+   T_inst=temp(particle)
+   #thermostate:
+#   for part in range(numPart):
+#      for i in range(3):
+#         particle[part][i+3]*=(1-alpha*(1-np.sqrt(T/T_inst)))
    return f,particle
 
 def update_force(particle,L):
@@ -76,7 +111,7 @@ def update_force(particle,L):
       """
       r=np.sqrt(r)
       k_b=2.07e-8
-      e=1e-10
+      e=0
       sigma=3.4
       epsilon=120.*k_b #in A/ps
       if r>2.5*sigma:
@@ -85,7 +120,7 @@ def update_force(particle,L):
          x=pow(sigma/e,6.)
          return 24*epsilon*(2*x-1)*x/(e*e)
       x=pow(sigma/r,6.)
-      #print(24*epsilon*(2*x*x-x)/(r*r), r)
+     # print(24*epsilon*(2*x*x-x)/(r*r), r)
       return 24*epsilon*(2*x-1)*x/(r*r)
 
    def minImage(x_0,x,L):
@@ -117,7 +152,6 @@ def update_force(particle,L):
       for interact in range(numPart):
          if part==interact: #avoid self-interaction with mirror
             r_ij=nextMirror(particle[part][:3],L)
-            print(r_ij)
          else:
             r_ij=minImage(particle[part][:3],particle[interact][:3],L)
          f_ij+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
@@ -134,11 +168,28 @@ def temp(particle):
    T/=3*N*k_b
    return T
 
-def print_conf(particle,output, t):
+def pairDist(p,L):
+   N=len(particle)
+   g=[]
+   for i in range(N):
+      for j in range(i+1,N): 
+         g.append(np.sqrt((p[i][:3]-p[j][:3])*(p[i][:3]-p[j][:3])))
+   g*=L*L*L*(N-1)*2/N
+   return g
+
+def print_conf(particle,output,output2, t,L):
    out=open(output,"a")
    T=temp(particle)
    for i in range(len(particle)):
-      out.write("%f  %d  %2.6f  %2.6f  %2.6f  %4.6g  %4.6g  %4.6g   %4.8g\n"
-            %(t, i, particle[i][0],  particle[i][1], particle[i][2],particle[i][3],  particle[i][4], particle[i][5],
-            T))
+      v=particle[i][3]*particle[i][3]+particle[i][4]*particle[i][4]+particle[i][5]*particle[i][5]
+      out.write("%f  %d  %2.6f  %2.6f  %2.6f  %4.6g  %4.6g \n"
+            %(t, i, particle[i][0],  particle[i][1], particle[i][2],np.sqrt(v),T))
+   out.write("\n\n")
+   
+   N=len(particle)
+   out=open(output2,"a")
+   for i in range(N):
+      for j in range(i+1,N): 
+         r_ij=(particle[i][:3]-particle[j][:3]).dot(particle[i][:3]-particle[j][:3])
+         out.write("%f  %14.10g\n" %(t,np.sqrt(r_ij)*(N-1)/N))
    out.write("\n\n")
