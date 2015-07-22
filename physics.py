@@ -34,7 +34,7 @@ def testBox(N,L, T):
 def testForce(N,L, T):
    """ simple method for placing particles randomly in the cell. No test of overlapping (small distances) is done.
    """
-   N=2
+   N=3
    phasecoord=np.zeros((N,6))
    mass=np.ones(N) #can be changed to treat different particles
    phasecoord[0][0]= L/2
@@ -43,10 +43,14 @@ def testForce(N,L, T):
    phasecoord[1][0]= L/2+3.8
    phasecoord[1][1]= L/2
    phasecoord[1][2]= L/2
+   phasecoord[2][1]= L/3
+   phasecoord[2][0]= 1.9 #half of the ... radius
    phasecoord[0][3]= 0.0002
    phasecoord[1][3]=-0.0002
    phasecoord[0][4]= 0.001
    phasecoord[1][4]=-0.001
+   phasecoord[2][3]=-0.0002
+   phasecoord[2][4]=-0.001
    return phasecoord,mass
 
 def propagate(f,particle,L,dt, mass):
@@ -59,30 +63,51 @@ def propagate(f,particle,L,dt, mass):
       particle[part][:3]+=dt*particle[part][3:]+dt*dt/(2*mass[part])*f[part]
       particle[part][3:]+=dt/mass[part]*f[part]/2
       #print(f[part])
-   f=update_force(particle)
+   f=update_force(particle,L)
    for part in range(numPart):
       particle[part][3:]+=dt/mass[part]*f[part]/2
       for i in range(3):
          particle[part][i]=particle[part][i]%L
    return f,particle
 
-def update_force(particle):
+def update_force(particle,L):
    def F(r):
       """returns the F/r for the Lennard-Jones potential
       """
       r=np.sqrt(r)
       k_b=2.07e-8
-      epsilon=1e-10
+      e=1e-10
       sigma=3.4
       epsilon=120.*k_b #in A/ps
       if r>2.5*sigma:
          return 0
-      if r<epsilon:
-         return 4
+      if r<e: #make potential constant in the center
+         x=pow(sigma/e,6.)
+         return 24*epsilon*(2*x-1)*x/(e*e)
       x=pow(sigma/r,6.)
-      print(24*epsilon*(2*x*x-x)/(r*r), r)
+      #print(24*epsilon*(2*x*x-x)/(r*r), r)
       return 24*epsilon*(2*x-1)*x/(r*r)
+
+   def minImage(x_0,x,L):
+      x_update=np.zeros(3)
+      for i in range(3):
+            a=(x_0[i]-x[i])%(L)
+            b=(x_0[i]-x[i]+L)%(L)-L
+            if abs(b)>=a:
+               x_update[i]=a
+            else:
+               x_update[i]=b
+      return x_update
    
+   def nextMirror(x,L):
+      x_update=np.zeros(3)
+      for i in range(3):
+         if x[i]>L/2:
+            x_update[i]=2*(L-x[i])
+         else:
+            x_update[i]=2*x[i]
+      return x_update
+
    numPart=len(particle)
    f=np.zeros((numPart,3))
    r_ij=np.zeros(3)
@@ -90,10 +115,12 @@ def update_force(particle):
    for part in range(numPart):
       f_ij*=0 #set the vector to 0
       for interact in range(numPart):
-         if part!=interact: #avoid self-interaction
-            for i in range(3):
-               r_ij[i]=particle[part][i]-particle[interact][i]
-            f_ij+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
+         if part==interact: #avoid self-interaction with mirror
+            r_ij=nextMirror(particle[part][:3],L)
+            print(r_ij)
+         else:
+            r_ij=minImage(particle[part][:3],particle[interact][:3],L)
+         f_ij+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
          f[part]=f_ij
    return f
 
