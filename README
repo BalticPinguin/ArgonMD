@@ -1,2 +1,16 @@
 The programme at hand is a classical Molecular dynamics programme 
 simulating a system of Argon atoms.
+
+The following files are used for:
+
+main.py     -> specifying the system (such as time-step etc.)
+physics.py  -> Here, the physics are implemented; such as the start conditions
+               availible and functions that can be used.
+movie.gp    -> gnuplot-file that uses the output to animate the simulation under study
+               in a 3d-plot of moving particles
+velocitiy.gp-> gnuplot-file that uses the output to plot the (time-dependent) velocity
+               distribution (as animation)
+pairdist.gp -> gnuplot-file that uses an other output-file to animate the pair density
+movie2.gp   -> makes 2 other animations of the system. Compared to movie.gp, here colour
+               is used to indicate (a) the height of atoms or (b) the speed of individual
+               atoms. With this, special cases can be made easier to understand

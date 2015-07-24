@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import physics as ph
+import sys
 
 def frange(start, stop, step): #imitate range, but with floats.
    r = start
@@ -9,15 +10,17 @@ def frange(start, stop, step): #imitate range, but with floats.
       i+=1
       r =start + i*step
 
-def main():
-   N=50 #number of particles
+def main(argv):
+   assert len(argv)==2, "only temperature and alpha are allowed as input-parameter!"
+   N=256 #number of particles
    #length in angstroem, integer required
-   L=10 #size of box; needs to be cubic for the method to be working
-   T=100
+   #L=10 #size of box; needs to be cubic for the method to be working
+   L=21   #-->  density of rho=1.8 g/cm^3
+   T=float(argv[0])
    #time-step (in ps)
-   dt=5e-3
-   t=10e0
-   alpha=0.7
+   dt=1e-2
+   t=10e+03
+   alpha=float(argv[1])/10
    #dt=10.0
    #t=6000e0
    output="box.dat"
@@ -35,4 +38,4 @@ def main():
       ph.print_conf(particle,output, output2, time, L)
 
 if __name__=="__main__":
-   main()
+   main(sys.argv[1:])

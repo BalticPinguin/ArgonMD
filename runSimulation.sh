@@ -1,7 +1,7 @@
 #!/bin/bash
 rm box.dat
 rm pairDist.dat
-./main.py 
+./main.py 70 >foo
 gnuplot movie.gp
 gnuplot velocity.gp
 gnuplot pairdist.gp
