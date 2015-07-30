@@ -12,25 +12,30 @@ def frange(start, stop, step): #imitate range, but with floats.
 
 def main(argv):
    assert len(argv)==2, "only temperature and alpha are allowed as input-parameter!"
-   N=256 #number of particles
+   #N=256 #number of particles
+   N=32 #number of particles
    #length in angstroem, integer required
    #L=10 #size of box; needs to be cubic for the method to be working
-   L=21   #-->  density of rho=1.8 g/cm^3
-   T=float(argv[0])
+   #L=21   #-->  density of rho=1.8 g/cm^3
+   L=10.5   #-->  density of rho=1.8 g/cm^3
+   T=400
+   #T=float(argv[0])
    #time-step (in ps)
-   dt=1e-2
-   t=10e+03
+   dt=float(argv[0])/10
+   #dt=1e-2
+   t=1e4
+   #t=30e3
    alpha=float(argv[1])/10
-   #dt=10.0
-   #t=6000e0
    output="box.dat"
    output2="pairDist.dat"
    #now, start simulation
 
    #particle,mass=ph.testBox(N,L, T)
    #particle,mass=ph.testForce(N,L, T)
-   particle,mass=ph.seed_fcc(N,L,T)
+   #particle,mass=ph.seed_fcc(N,L,T)
+   particle,mass=ph.seed_small(N,L,T)
    #particle,mass=ph.seed(N,L, T)
+
    force=ph.update_force(particle,L) #get forces
    ph.print_conf(particle,output, output2,0, L)
    for time in frange(dt,t,dt):
