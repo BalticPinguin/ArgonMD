@@ -55,22 +55,27 @@ def seed_small(N,L,T):
    N=32
    phasecoord=np.zeros((N,6))
    mass=np.ones(N) #can be changed to treat different particles
-   r=[L/8,L/8,L/8]
+   #r=[L/8,L/8,L/8]
+   a=L/( 1.5+1/(2*np.sqrt(2)) )
+   r=[0,0,0]
    for particle in range(0,N,4):
-      phasecoord[particle:particle+4].T[:3]=fcc(r,L/2).T
-      if r[0]<L-2*L/3:
-         r[0]+=L/2
-      elif r[1]<L-2*L/3:
-         r[0]=L/8
-         r[1]+=L/2
+      phasecoord[particle:particle+4].T[:3]=fcc(r,a).T
+      if r[0]<L-a:
+         r[0]+=a
+      elif r[1]<L-a:
+         r[0]=0
+         r[1]+=a
       else:
-         r[0]=L/8
-         r[1]=L/8
-         r[2]+=L/2
+         r[0]=0
+         r[1]=0
+         r[2]+=a
       # boltzmann-distribution for velocities
       #phasecoord[particle][3:]=sc.maxwell.rvs(size=3)
       for coord in range(3,6):
          phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
+   for particle in range(N):
+      for i in range(3):
+         phasecoord[particle][i]+=a/(4*np.sqrt(2))
    return phasecoord,mass
 
 def seed_small_det(N,L,T):
@@ -223,11 +228,10 @@ def update_force(particle,L):
    for part in range(numPart):
       for interact in range(numPart):
          if part==interact: # self-interaction with mirror
-            r_ij=nextMirror(particle[part][:3],L)
-            f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
-         else:
-            r_ij=minImage(particle[part][:3],particle[interact][:3],L)
-            f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
+            continue
+         r_ij=minImage(particle[part][:3],particle[interact][:3],L)
+         f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
+            #f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
             #f[part]+=F(r_ij.dot(r_ij))*r_ij
       #print(f[part], particle[part][3:])
    return f
@@ -261,16 +265,16 @@ def print_conf(particle,output,output2, t,L):
       epsilon=120.*k_b #in A/ps
       for j in range(len(parti)):
          if i==j:
-            dist=nextMirror(parti[i][:3],L)
+            #dist=nextMirror(parti[i][:3],L)
             #r=np.sqrt(dist.dot(dist) )
-            r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
+            #r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
+            continue
          else:
             dist=minImage(parti[j][:3],parti[i][:3],L)
             #r=np.sqrt(dist.dot(dist) )
             r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
          #   if r>2.5*sigma:
          #      continue #add 0 to potential
-      #   x=pow(sigma/r,6.)
          x=(sigma/r)*(sigma/r)
          x*=x*x
          V+=4*epsilon*(x*x-x)

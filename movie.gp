@@ -3,9 +3,9 @@ set output "movie.gif"
 set title "unboxed evolution"
 set xlabel "x"
 set ylabel "y"
-set xrange[0:10]
-set yrange[0:10]
-set zrange[0:10]
+set xrange[0:10.5]
+set yrange[0:10.5]
+set zrange[0:10.5]
 #set hidden3d
 #set isosamples 80
 stats 'box.dat' nooutput

@@ -18,13 +18,10 @@ def main(argv):
    #L=10 #size of box; needs to be cubic for the method to be working
    #L=21   #-->  density of rho=1.8 g/cm^3
    L=10.5   #-->  density of rho=1.8 g/cm^3
-   T=400
-   #T=float(argv[0])
+   T=200
    #time-step (in ps)
-   dt=float(argv[0])
-   #dt=1e-2
-   t=3e2
-   #t=30e3
+   dt=float(argv[0])/10
+   t=1e2
    alpha=float(argv[1])/10
    output="box.dat"
    output2="pairDist.dat"
@@ -33,7 +30,8 @@ def main(argv):
    #particle,mass=ph.testBox(N,L, T)
    #particle,mass=ph.testForce(N,L, T)
    #particle,mass=ph.seed_fcc(N,L,T)
-   particle,mass=ph.seed_small_det(N,L,T)
+   particle,mass=ph.seed_small(N,L,T)
+   #particle,mass=ph.seed_small_det(N,L,T)
    #particle,mass=ph.seed(N,L, T)
 
    force=ph.update_force(particle,L) #get forces
