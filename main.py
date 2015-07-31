@@ -21,9 +21,9 @@ def main(argv):
    T=400
    #T=float(argv[0])
    #time-step (in ps)
-   dt=float(argv[0])/10
+   dt=float(argv[0])
    #dt=1e-2
-   t=1e4
+   t=3e2
    #t=30e3
    alpha=float(argv[1])/10
    output="box.dat"
@@ -33,7 +33,7 @@ def main(argv):
    #particle,mass=ph.testBox(N,L, T)
    #particle,mass=ph.testForce(N,L, T)
    #particle,mass=ph.seed_fcc(N,L,T)
-   particle,mass=ph.seed_small(N,L,T)
+   particle,mass=ph.seed_small_det(N,L,T)
    #particle,mass=ph.seed(N,L, T)
 
    force=ph.update_force(particle,L) #get forces

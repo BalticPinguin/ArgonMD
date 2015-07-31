@@ -73,6 +73,41 @@ def seed_small(N,L,T):
          phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
    return phasecoord,mass
 
+def seed_small_det(N,L,T):
+   def fcc(r, l):
+      parti=np.zeros((4,3))
+      parti[0]=r
+      #print(r[0], r[1], r[2])
+      parti[1]=[r[0]+l/2,r[1]+l/2,r[2]]
+      #print(r[0]+l/2,r[1]+l/2,r[2])
+      parti[2]=[r[0]+l/2,r[1],r[2]+l/2]
+      #print(r[0]+l/2,r[1],r[2]+l/2)
+      parti[3]=[r[0],r[1]+l/2,r[2]+l/2]
+      #print(r[0],r[1]+l/2,r[2]+l/2)
+      return parti
+
+   k=2.078616e-8
+   N=32
+   phasecoord=np.zeros((N,6))
+   mass=np.ones(N) #can be changed to treat different particles
+   r=[L/8,L/8,L/8]
+   for particle in range(0,N,4):
+      phasecoord[particle:particle+4].T[:3]=fcc(r,L/2).T
+      if r[0]<L-2*L/3:
+         r[0]+=L/2
+      elif r[1]<L-2*L/3:
+         r[0]=L/8
+         r[1]+=L/2
+      else:
+         r[0]=L/8
+         r[1]=L/8
+         r[2]+=L/2
+      # boltzmann-distribution for velocities
+      #phasecoord[particle][3:]=sc.maxwell.rvs(size=3)
+      for coord in range(3,6):
+         phasecoord[particle][coord]=np.sqrt(k)
+   return phasecoord,mass
+
 def seed(N,L,T):
    """ simple method for placing particles randomly in the cell. No test of overlapping (small distances) is done.
    """
@@ -126,12 +161,12 @@ def propagate(f,particle,L,dt, mass, alpha,T):
    numPart=len(particle)
    for part in range(numPart):
       #print( particle[part][3:],1/(2*mass[part])*f[part])
-      particle[part][:3]+=dt*particle[part][3:]+dt*dt*f[part]/(2*mass[part])
-      particle[part][3:]+=dt*f[part]/(2*mass[part])
+      particle[part][:3]+=dt*particle[part][3:]+dt*dt*f[part]/2
+      particle[part][3:]+=dt*f[part]/2
       #print(f[part])
    f=update_force(particle,L)
    for part in range(numPart):
-      particle[part][3:]+=dt*f[part]/(2*mass[part])
+      particle[part][3:]+=dt*f[part]/2
       for i in range(3):
          particle[part][i]=particle[part][i]%L
    T_inst=temp(particle)
@@ -151,16 +186,18 @@ def update_force(particle,L):
       epsilon=120.*k_b #in A/ps
     #  if r>2.5*sigma:
     #     return 0
-      x=pow(sigma/r,6.)
+      #x=pow(sigma/r,6.)
+      x=(sigma/r)*(sigma/r)
+      x*=x*x
       #print(24*epsilon*(2*x*x-x)/(r), r)
-      return 24*epsilon*(2*x*x-x)/(r*r)
+      return 24*epsilon*(2*x-1)*x/(r*r)
 
    def minImage(x_0,x,L):
       x_update=np.zeros(3)
       for i in range(3):
             a=(x_0[i]-x[i])%(L)
             b=(x_0[i]-x[i]+L)%(L)-L
-            if abs(b)>=a:
+            if -b>=a:
                x_update[i]=a
             else:
                x_update[i]=b
@@ -182,15 +219,16 @@ def update_force(particle,L):
 
    numPart=len(particle)
    f=np.zeros((numPart,3))
-   r_ij=np.zeros(3)
+   #r_ij=np.zeros(3)
    for part in range(numPart):
       for interact in range(numPart):
          if part==interact: # self-interaction with mirror
             r_ij=nextMirror(particle[part][:3],L)
-            f[part]+=F(r_ij.dot(r_ij))*r_ij
+            f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
          else:
             r_ij=minImage(particle[part][:3],particle[interact][:3],L)
-            f[part]+=F(r_ij.dot(r_ij))*r_ij
+            f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
+            #f[part]+=F(r_ij.dot(r_ij))*r_ij
       #print(f[part], particle[part][3:])
    return f
 
@@ -224,14 +262,17 @@ def print_conf(particle,output,output2, t,L):
       for j in range(len(parti)):
          if i==j:
             dist=nextMirror(parti[i][:3],L)
-            r=np.sqrt(dist.dot(dist) )
+            #r=np.sqrt(dist.dot(dist) )
+            r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
          else:
             dist=minImage(parti[j][:3],parti[i][:3],L)
-            r=np.sqrt(dist.dot(dist) )
+            #r=np.sqrt(dist.dot(dist) )
+            r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
          #   if r>2.5*sigma:
          #      continue #add 0 to potential
-            #else:
-         x=pow(sigma/r,6.)
+      #   x=pow(sigma/r,6.)
+         x=(sigma/r)*(sigma/r)
+         x*=x*x
          V+=4*epsilon*(x*x-x)
       return V
 
@@ -239,8 +280,8 @@ def print_conf(particle,output,output2, t,L):
       x_update=np.zeros(3)
       for i in range(3):
             a=(x_0[i]-x[i])%(L)
-            b=(x_0[i]-x[i]+L)%(L)-L
-            if abs(b)>=a:
+            b=(x_0[i]-x[i]+L)%(L)-L #always <=0 (by construction)
+            if -b>=a:
                x_update[i]=a
             else:
                x_update[i]=b
@@ -263,30 +304,30 @@ def print_conf(particle,output,output2, t,L):
    out=open(output,"a")
    T=temp(particle)
    E=[0,0]
-   for i in range(len(particle)):
+   N=len(particle)
+   for i in range(N):
+      part=particle[i]
       #v=particle[i][3]*particle[i][3]+particle[i][4]*particle[i][4]+particle[i][5]*particle[i][5]
-      v=particle[i][3:].dot(particle[i][3:])
+      v=part[3]*part[3]+part[4]*part[4]+part[5]*part[5]
       V=potential(particle,i)
       out.write("%f  %d  %2.6f  %2.6f  %2.6f  %4.6g  %4.6g\n"
-            %(t, i, particle[i][0],  particle[i][1], particle[i][2], np.sqrt(v), V))
-      E[0]+=v/2
-      E[1]+=V/2
+            %(t, i, part[0],  part[1], part[2], np.sqrt(v), V))
+      E[0]+=v/2 #is v^2/2
+      E[1]+=V/2 #/2 since sum runs over all indices
    print(t,E[0], E[1], T)
    out.write("\n\n")
    out.close()
    
    #print pair distributions. Correct for r<=L; all values with higher difference are omitted.
-   N=len(particle)
    out=open(output2,"a")
    for i in range(N):
-      for a in [-L,0,L]:
-         for b in [-L,0,L]:
-            for c in [-L,0,L]:
-               R=[a,b,c] #get all neighbouring cells as well
-               for j in range(i+1,N): 
-                  r_ij=(particle[i][:3]-particle[j][:3]-R).dot(particle[i][:3]-particle[j][:3]-R)
-                  if r_ij>L: #save space and discart values that will give wrong statistics anyways.
-                     continue
-                  out.write("%f  %14.10g\n" %(t,np.sqrt(r_ij)*(N-1)/N))
-      out.write("\n\n")
+      for j in range(i+1,N): 
+         r_ij=0
+         for k in range(3):
+            r_ij+=min((particle[i][k]-particle[j][k]-L)*(particle[i][k]-particle[j][k]-L),\
+                      (particle[i][k]-particle[j][k]  )*(particle[i][k]-particle[j][k]  ),\
+                      (particle[i][k]-particle[j][k]+L)*(particle[i][k]-particle[j][k]+L))
+         if r_ij<=L*L: #save space and discart values that will give wrong statistics anyways.
+            out.write("%f  %14.10g\n" %(t,np.sqrt(r_ij)) )
+   out.write("\n\n")
    out.close()
