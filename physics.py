@@ -20,22 +20,27 @@ def seed_fcc(N,L,T):
    N=256
    phasecoord=np.zeros((N,6))
    mass=np.ones(N) #can be changed to treat different particles
-   r=[L/16,L/16,L/16]
+   #r=[L/16,L/16,L/16]
+   a=L/4
+   r=[0,0,0]
    for particle in range(0,N,4):
-      phasecoord[particle:particle+4].T[:3]=fcc(r,L/2).T
-      if r[0]<L-L/3:
-         r[0]+=L/4
-      elif r[1]<L-L/3:
-         r[0]=L/16
-         r[1]+=L/4
+      phasecoord[particle:particle+4].T[:3]=fcc(r,a).T
+      if r[0]<L-a:
+         r[0]+=a
+      elif r[1]<L-a:
+         r[0]=0
+         r[1]+=a
       else:
-         r[0]=L/16
-         r[1]=L/16
-         r[2]+=L/4
+         r[0]=0
+         r[1]=0
+         r[2]+=a
       # boltzmann-distribution for velocities
       #phasecoord[particle][3:]=sc.maxwell.rvs(size=3)
       for coord in range(3,6):
          phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
+   for particle in range(N):
+      for i in range(3):
+         phasecoord[particle][i]+=a/4
    return phasecoord,mass
 
 def seed_small(N,L,T):
@@ -55,8 +60,7 @@ def seed_small(N,L,T):
    N=32
    phasecoord=np.zeros((N,6))
    mass=np.ones(N) #can be changed to treat different particles
-   #r=[L/8,L/8,L/8]
-   a=L/( 1.5+1/(2*np.sqrt(2)) )
+   a=L/2
    r=[0,0,0]
    for particle in range(0,N,4):
       phasecoord[particle:particle+4].T[:3]=fcc(r,a).T
@@ -69,13 +73,11 @@ def seed_small(N,L,T):
          r[0]=0
          r[1]=0
          r[2]+=a
-      # boltzmann-distribution for velocities
-      #phasecoord[particle][3:]=sc.maxwell.rvs(size=3)
       for coord in range(3,6):
          phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
    for particle in range(N):
       for i in range(3):
-         phasecoord[particle][i]+=a/(4*np.sqrt(2))
+         phasecoord[particle][i]+=a/4
    return phasecoord,mass
 
 def seed_small_det(N,L,T):
