@@ -167,19 +167,18 @@ def propagate(f,particle,L,dt, mass, alpha,T):
    #update force and momentum for particles:
    numPart=len(particle)
    for part in range(numPart):
-      #print( particle[part][3:],1/(2*mass[part])*f[part])
       particle[part][:3]+=dt*particle[part][3:]+dt*dt*f[part]/2
       particle[part][3:]+=dt*f[part]/2
       #print(f[part])
    f=update_force(particle,L)
    for part in range(numPart):
       particle[part][3:]+=dt*f[part]/2
-      for i in range(3):
+      for i in [0,1,2]:
          particle[part][i]=particle[part][i]%L
    T_inst=temp(particle)
    #thermostate:
    for part in range(numPart):
-      for i in range(3):
+      for i in [0,1,2]:
          particle[part][i+3]*=(1-alpha*(1-np.sqrt(T/T_inst)))
    return f,particle
 
@@ -188,54 +187,34 @@ def update_force(particle,L):
       """returns the F/r for the Lennard-Jones potential
       """
       r=np.sqrt(r)
-      k_b=2.078616e-8
       sigma=3.4
-      epsilon=120.*k_b #in A/ps
-    #  if r>2.5*sigma:
-    #     return 0
+      if r>2.5*sigma:
+         return 0
       #x=pow(sigma/r,6.)
+      k_b=2.078616e-8
+      epsilon=120.*k_b #in A/ps
       x=(sigma/r)*(sigma/r)
       x*=x*x
-      #print(24*epsilon*(2*x*x-x)/(r), r)
       return 24*epsilon*(2*x-1)*x/(r*r)
 
-   def minImage(x_0,x,L):
-      x_update=np.zeros(3)
-      for i in range(3):
-            a=(x_0[i]-x[i])%(L)
-            b=(x_0[i]-x[i]+L)%(L)-L
-            if -b>=a:
-               x_update[i]=a
-            else:
-               x_update[i]=b
-      return x_update
-   
-   def nextMirror(x,L):
-      x_update=np.zeros(3)
-      ma=np.argmax(x)
-      mi=np.argmin(x)
-      x_update=x.copy()
-      if x[mi]<L/2:
-         if x[mi]<L-x[ma]:
-            x_update[mi]=-(x[mi])
+   def minImage(x_0,x,L,r):
+      for i in [0,1,2]:
+         a=(x_0[i]-x[i])%L
+         if a<=L-a:
+            r[i]=a
          else:
-            x_update[ma]+=2*(L-x[ma])
-      else:
-         x_update[ma]+=2*(L-x[ma])
-      return x-x_update
+            r[i]=a-L
+      return r
 
    numPart=len(particle)
    f=np.zeros((numPart,3))
-   #r_ij=np.zeros(3)
+   r_ij=np.zeros(3)
    for part in range(numPart):
       for interact in range(numPart):
          if part==interact: # self-interaction with mirror
             continue
-         r_ij=minImage(particle[part][:3],particle[interact][:3],L)
+         r_ij=minImage(particle[part][:3],particle[interact][:3],L,r_ij)
          f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
-            #f[part]+=F(r_ij[0]*r_ij[0]+r_ij[1]*r_ij[1]+r_ij[2]*r_ij[2])*r_ij
-            #f[part]+=F(r_ij.dot(r_ij))*r_ij
-      #print(f[part], particle[part][3:])
    return f
 
 def temp(particle):
@@ -262,65 +241,47 @@ def print_conf(particle,output,output2, t,L):
       """returns the V(r) for the Lennard-Jones potential
       """
       V=0
-      k_b=2.078616e-8
+      sqrt=np.sqrt
       sigma=3.4
-      epsilon=120.*k_b #in A/ps
+      epsilon=120.*2.078616e-8 #in A/ps
+      dist=np.zeros(3)
       for j in range(len(parti)):
          if i==j:
-            #dist=nextMirror(parti[i][:3],L)
-            #r=np.sqrt(dist.dot(dist) )
-            #r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
             continue
          else:
-            dist=minImage(parti[j][:3],parti[i][:3],L)
-            #r=np.sqrt(dist.dot(dist) )
-            r=np.sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
-         #   if r>2.5*sigma:
-         #      continue #add 0 to potential
+            dist=minImage(parti[j][:3],parti[i][:3],L, dist)
+            r=sqrt(dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2])
+            if r>2.5*sigma:
+               continue #add 0 to potential
          x=(sigma/r)*(sigma/r)
-         x*=x*x
-         V+=4*epsilon*(x*x-x)
+         x=x*x*x
+         V+=x*x-x
+      V*=4*epsilon
       return V
-
-   def minImage(x_0,x,L):
-      x_update=np.zeros(3)
-      for i in range(3):
-            a=(x_0[i]-x[i])%(L)
-            b=(x_0[i]-x[i]+L)%(L)-L #always <=0 (by construction)
-            if -b>=a:
-               x_update[i]=a
-            else:
-               x_update[i]=b
-      return x_update
    
-   def nextMirror(x,L):
-      x_update=np.zeros(3)
-      ma=np.argmax(x)
-      mi=np.argmin(x)
-      x_update=x.copy()
-      if x[mi]<L/2:
-         if x[mi]<L-x[ma]:
-            x_update[mi]=-(x[mi])
+   def minImage(x_0,x,L,r):
+      for i in [0,1,2]:
+         a=(x_0[i]-x[i])%L
+         if a<=L-a:
+            r[i]=a
          else:
-            x_update[ma]+=2*(L-x[ma])
-      else:
-         x_update[ma]+=2*(L-x[ma])
-      return x-x_update
+            r[i]=a-L
+      return r
 
    out=open(output,"a")
    T=temp(particle)
    E=[0,0]
    N=len(particle)
+   sqrt=np.sqrt
    for i in range(N):
       part=particle[i]
-      #v=particle[i][3]*particle[i][3]+particle[i][4]*particle[i][4]+particle[i][5]*particle[i][5]
       v=part[3]*part[3]+part[4]*part[4]+part[5]*part[5]
       V=potential(particle,i)
       out.write("%f  %d  %2.6f  %2.6f  %2.6f  %4.6g  %4.6g\n"
-            %(t, i, part[0],  part[1], part[2], np.sqrt(v), V))
-      E[0]+=v/2 #is v^2/2
-      E[1]+=V/2 #/2 since sum runs over all indices
-   print(t,E[0], E[1], T)
+            %(t, i, part[0],  part[1], part[2], sqrt(v), V))
+      E[0]+=v #is v^2/2
+      E[1]+=V #/2 since sum runs over all indices
+   print(t, E[0]/2, E[1]/2, T)
    out.write("\n\n")
    out.close()
    
@@ -329,11 +290,20 @@ def print_conf(particle,output,output2, t,L):
    for i in range(N):
       for j in range(i+1,N): 
          r_ij=0
-         for k in range(3):
-            r_ij+=min((particle[i][k]-particle[j][k]-L)*(particle[i][k]-particle[j][k]-L),\
-                      (particle[i][k]-particle[j][k]  )*(particle[i][k]-particle[j][k]  ),\
-                      (particle[i][k]-particle[j][k]+L)*(particle[i][k]-particle[j][k]+L))
+         for k in [0,1,2]:
+            p=particle[i][k]-particle[j][k]
+            if p>0:
+               if p<L-p:
+                  r_ij+=(p)*(p)
+               else:
+                  r_ij+=(p-L)*(p-L)
+            else:
+               if p+L<-p:
+                  r_ij+=(p+L)*(p+L)
+               else:
+                  r_ij+=(p)*(p)
+
          if r_ij<=L*L: #save space and discart values that will give wrong statistics anyways.
-            out.write("%f  %14.10g\n" %(t,np.sqrt(r_ij)) )
+            out.write("%f  %14.10g\n" %(t,sqrt(r_ij)) )
    out.write("\n\n")
    out.close()

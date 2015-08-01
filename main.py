@@ -14,25 +14,26 @@ def main(argv):
    assert len(argv)==2, "only temperature and alpha are allowed as input-parameter!"
    #N=256 #number of particles
    N=32 #number of particles
-   #length in angstroem, integer required
    #L=10 #size of box; needs to be cubic for the method to be working
-   #L=21   #-->  density of rho=1.8 g/cm^3
-   L=10.5   #-->  density of rho=1.8 g/cm^3
-   T=200
-   #time-step (in ps)
-   dt=float(argv[0])/10
-   t=1e2
+   T=00
+   dt=float(argv[0])
+   t=00
+   t=1e1
    alpha=float(argv[1])/10
    output="box.dat"
    output2="pairDist.dat"
    #now, start simulation
 
+   #L=10 #size of box; needs to be cubic for the method to be working
    #particle,mass=ph.testBox(N,L, T)
    #particle,mass=ph.testForce(N,L, T)
-   #particle,mass=ph.seed_fcc(N,L,T)
-   particle,mass=ph.seed_small(N,L,T)
-   #particle,mass=ph.seed_small_det(N,L,T)
    #particle,mass=ph.seed(N,L, T)
+
+   #length in angstroem, integer required
+   #L=21   #-->  density of rho=1.8 g/cm^3
+   particle,mass=ph.seed_fcc(N,L,T)
+   L=10.5   #-->  density of rho=1.8 g/cm^3
+   #particle,mass=ph.seed_small(N,L,T)
 
    force=ph.update_force(particle,L) #get forces
    ph.print_conf(particle,output, output2,0, L)
