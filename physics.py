@@ -37,7 +37,7 @@ def seed_fcc(N,L,T):
       # boltzmann-distribution for velocities
       #phasecoord[particle][3:]=sc.maxwell.rvs(size=3)
       for coord in range(3,6):
-         phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
+         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*3./2.
    for particle in range(N):
       for i in range(3):
          phasecoord[particle][i]+=a/4
@@ -74,7 +74,7 @@ def seed_small(N,L,T):
          r[1]=0
          r[2]+=a
       for coord in range(3,6):
-         phasecoord[particle][coord]=(rand.random()-0.5)*4*np.sqrt(T*k)
+         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*3./2.
    for particle in range(N):
       for i in range(3):
          phasecoord[particle][i]+=a/4
@@ -126,7 +126,7 @@ def seed(N,L,T):
          phasecoord[particle][coord]= rand.random()*L #random float in the box
       for coord in range(3,6):
          # allow for velocities between 1 and -1
-         phasecoord[particle][coord]=(rand.random()-0.5)*2*2*np.sqrt(T*k)
+         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*3./2.
    return phasecoord,mass
 
 def testBox(N,L, T):
