@@ -8,11 +8,11 @@ def seed_fcc(N,L,T):
       parti=np.zeros((4,3))
       parti[0]=r
       #print(r[0], r[1], r[2])
-      parti[1]=[r[0]+l/2,r[1]+l/2,r[2]]
+      parti[1]=[r[0]+l*.5,r[1]+l*.5,r[2]]
       #print(r[0]+l/2,r[1]+l/2,r[2])
-      parti[2]=[r[0]+l/2,r[1],r[2]+l/2]
+      parti[2]=[r[0]+l*.5,r[1],r[2]+l*.5]
       #print(r[0]+l/2,r[1],r[2]+l/2)
-      parti[3]=[r[0],r[1]+l/2,r[2]+l/2]
+      parti[3]=[r[0],r[1]+l*.5,r[2]+l*.5]
       #print(r[0],r[1]+l/2,r[2]+l/2)
       return parti
 
@@ -21,7 +21,7 @@ def seed_fcc(N,L,T):
    phasecoord=np.zeros((N,6))
    mass=np.ones(N) #can be changed to treat different particles
    #r=[L/16,L/16,L/16]
-   a=L/4
+   a=L*.25
    r=[0,0,0]
    for particle in range(0,N,4):
       phasecoord[particle:particle+4].T[:3]=fcc(r,a).T
@@ -37,10 +37,10 @@ def seed_fcc(N,L,T):
       # boltzmann-distribution for velocities
       #phasecoord[particle][3:]=sc.maxwell.rvs(size=3)
       for coord in range(3,6):
-         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*3./2.
+         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*2
    for particle in range(N):
       for i in range(3):
-         phasecoord[particle][i]+=a/4
+         phasecoord[particle][i]+=a*.25
    return phasecoord,mass
 
 def seed_small(N,L,T):
@@ -74,7 +74,7 @@ def seed_small(N,L,T):
          r[1]=0
          r[2]+=a
       for coord in range(3,6):
-         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*3./2.
+         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*15./4.
    for particle in range(N):
       for i in range(3):
          phasecoord[particle][i]+=a/4
@@ -126,7 +126,7 @@ def seed(N,L,T):
          phasecoord[particle][coord]= rand.random()*L #random float in the box
       for coord in range(3,6):
          # allow for velocities between 1 and -1
-         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*3./2.
+         phasecoord[particle][coord]=(rand.random()-0.5)*4.*np.sqrt(T*k)*15./4.
    return phasecoord,mass
 
 def testBox(N,L, T):
@@ -139,7 +139,7 @@ def testBox(N,L, T):
    for particle in range(N):
       for coord in range(3):
          phasecoord[particle][coord]=rand.random()*0.8*L+ 0.1*L #random float in the box
-         phasecoord[particle][coord+3]=(rand.random()-0.5)*4*np.sqrt(T*k)
+         phasecoord[particle][coord+3]=(rand.random()-0.5)*4*np.sqrt(T*k)*15./4.
          # allow for velocities 
    return phasecoord,mass
 
@@ -288,22 +288,14 @@ def print_conf(particle,output,output2, t,L):
    #print pair distributions. Correct for r<=L; all values with higher difference are omitted.
    out=open(output2,"a")
    for i in range(N):
-      for j in range(i+1,N): 
-         r_ij=0
-         for k in [0,1,2]:
-            p=particle[i][k]-particle[j][k]
-            if p>0:
-               if p<L-p:
-                  r_ij+=(p)*(p)
-               else:
-                  r_ij+=(p-L)*(p-L)
-            else:
-               if p+L<-p:
-                  r_ij+=(p+L)*(p+L)
-               else:
-                  r_ij+=(p)*(p)
-
-         if r_ij<=L*L: #save space and discart values that will give wrong statistics anyways.
-            out.write("%f  %14.10g\n" %(t,sqrt(r_ij)) )
+      for a in [-L,0,L]:
+         for b in [-L,0,L]:
+            for c in [-L,0,L]:
+               R=[a,b,c] #get all neighbouring cells as well
+               for j in range(i+1,N): 
+                  r_ij=(particle[i][:3]-particle[j][:3]-R).dot(particle[i][:3]-particle[j][:3]-R)
+                  if r_ij>L*L: #save space and discart values that will give wrong statistics anyways.
+                     continue
+                  out.write("%f  %14.10g\n" %(t,np.sqrt(r_ij)*(N-1)/N))
    out.write("\n\n")
    out.close()
