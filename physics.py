@@ -192,7 +192,7 @@ def update_force(particle,L):
          return 0
       #x=pow(sigma/r,6.)
       k_b=2.078616e-8
-      epsilon=120.*k_b #in A/ps
+      epsilon=120.*k_b #in A^2/ps^2=10^4 m^2/s^2*kg
       x=(sigma/r)*(sigma/r)
       x*=x*x
       return 24*epsilon*(2*x-1)*x/(r*r)

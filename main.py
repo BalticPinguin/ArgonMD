@@ -17,8 +17,8 @@ def main(argv):
    #length in angstroem, integer required
    #L=10 #size of box; needs to be cubic for the method to be working
    T=float(argv[0])
-   dt=10
-   t=3e3
+   dt=10 #10 ps per step
+   t=3e3 #3 fs of simulation time.
    alpha=0.02
    L=21   #-->  density of rho=1.8 g/cm^3
    #L=10.5   #-->  density of rho=1.8 g/cm^3
@@ -39,7 +39,7 @@ def main(argv):
    for time in frange(dt,t,dt):
       force,particle=ph.propagate(force,particle,L, dt,mass, alpha,T)
       if time >2e3: # don't waste time, printing dumb data.
-      ph.print_conf(particle,output, output2, time, L)
+         ph.print_conf(particle,output, output2, time, L)
 
 if __name__=="__main__":
    main(sys.argv[1:])
